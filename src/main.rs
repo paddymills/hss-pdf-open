@@ -25,10 +25,10 @@ impl Cli {
 
         let mut args: Vec<String> = Vec::new();
         for dwg in self.dwgs.into_iter().flatten() {
-            let root = job_root.join(&dwg.to_uppercase()).with_extension("PDF");
+            let root = job_root.join(&dwg).with_extension("PDF");
             let prelim = job_root
                 .join("Preliminary")
-                .join(&dwg.to_uppercase())
+                .join(&dwg)
                 .with_extension("PDF");
 
             if root.exists() {
@@ -77,9 +77,9 @@ fn parse_dwg(dwg: &str) -> Vec<String> {
                     Regex::new(r"([a-zA-Z]+)([0-9]+)-[a-zA-Z]*([0-9]+)").unwrap();
             }
 
-            let mut dwgs = vec![];
             match PATTERN.captures(dwg) {
                 Some(caps) => {
+                    let mut dwgs = vec![];
                     let prefix = &caps[1];
 
                     // regex should ensure these two parse numerically and
@@ -89,7 +89,7 @@ fn parse_dwg(dwg: &str) -> Vec<String> {
                     let end: u32 = caps[3].parse().unwrap();
 
                     for i in start..end + 1 {
-                        dwgs.push(String::from(format!("{}{}", prefix, i)));
+                        dwgs.push(String::from(format!("{}{}", prefix, i)).to_uppercase());
                     }
 
                     dwgs
