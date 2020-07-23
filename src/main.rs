@@ -60,6 +60,9 @@ impl Cli {
 
 fn main() -> Result<(), ExitFailure> {
     let args = Cli::from_args();
+
+    // TODO: launch ViewShopDrawings if no args
+    // PathBuf::from(r"\\HSSIENG\Resources\HS\PROG\DCS\ViewShopDrawingsNET.exe")
     args.open_files();
 
     Ok(())
