@@ -84,12 +84,19 @@ fn parse_dwg(dwg: &str) -> Vec<String> {
                 Some(caps) => {
                     let mut dwgs = vec![];
                     let prefix = &caps[1];
+                    let (a, b) = (&caps[2], &caps[3]);
 
                     // regex should ensure these two parse numerically and
                     // conventionally these numbers should never exceed u32::MAX
                     // therefore ->  should not panic!
-                    let start: u32 = caps[2].parse().unwrap();
-                    let end: u32 = caps[3].parse().unwrap();
+                    let start: u32 = a.parse().unwrap();
+                    let end: u32 = match a.len() - b.len() {
+                        x if x > 0 => {
+                            let c = vec![&a[0..x], &b].concat();
+                            c.parse().unwrap()
+                        }
+                        _ => b.parse().unwrap(), // same length or b is longer (i.e. 1-20)
+                    };
 
                     for i in start..end + 1 {
                         dwgs.push(String::from(format!("{}{}", prefix, i)).to_uppercase());
@@ -106,11 +113,15 @@ fn parse_dwg(dwg: &str) -> Vec<String> {
 
 fn get_pdf_handler() -> std::io::Result<String> {
     let hkcr = RegKey::predef(HKEY_CLASSES_ROOT);
-    let pdf: String = hkcr.open_subkey(".pdf")?.get_value("")?;
-    let exec_path: PathBuf = [pdf.as_str(), "shell", "Open", "Command"].iter().collect();
 
+    // get pdf handler
+    let pdf: String = hkcr.open_subkey(".pdf")?.get_value("")?;
+
+    // get location of pdf handler
+    let exec_path: PathBuf = [pdf.as_str(), "shell", "Open", "Command"].iter().collect();
     let exec: String = hkcr.open_subkey(exec_path)?.get_value("")?;
 
+    // parse out exe only (may have shell argument placeholders in value)
     let exe_pattern = Regex::new(r"C:[\w \\]+\.exe").unwrap();
     let mat = exe_pattern.find(&exec).unwrap();
     let exe = String::from(&exec[mat.start()..mat.end()]);
