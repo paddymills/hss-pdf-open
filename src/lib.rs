@@ -1,8 +1,9 @@
+use regex::Regex;
 use std::path::PathBuf;
 use winreg::enums::HKEY_CLASSES_ROOT;
 use winreg::RegKey;
 
-fn get_pdf_handler() -> std::io::Result<String> {
+pub fn get_pdf_handler() -> std::io::Result<String> {
   let hkcr = RegKey::predef(HKEY_CLASSES_ROOT);
 
   // get pdf handler

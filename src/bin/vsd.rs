@@ -4,6 +4,8 @@ use std::path::PathBuf;
 use std::process::Command;
 use structopt::StructOpt;
 
+use hsspdfopen::get_pdf_handler;
+
 #[macro_use]
 extern crate lazy_static;
 

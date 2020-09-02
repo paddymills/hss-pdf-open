@@ -1,5 +1,5 @@
 [package]
-name = "viewshopdrawings"
+name = "hsspdfopen"
 version = "0.1.0"
 authors = ["paddymills <paddymills@pm.me>"]
 edition = "2018"
