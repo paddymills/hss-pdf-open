@@ -1,5 +1,9 @@
-# view-shop-drawings
-HSS View Shop Drawings CLI
+# HSS PDF Open
+HSS Utility to ope PDF files
+
+# Binaries
+- vsd: View Shop Drawings CLI
+- erep: SigmaNest eReports
 
 ## Download
 in [releases](https://github.com/paddymills/view-shop-drawings/releases)
