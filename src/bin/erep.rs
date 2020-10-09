@@ -18,15 +18,20 @@ struct Cli {
 
 impl Cli {
   fn open_files(self) {
+    const PROG_LEN: usize = 5; // must be usize for len comparison and trucate
     let mut last_prog = String::from("00000");
 
     let erep_root = PathBuf::from(r"\\hssfileserv1\hssiserv1\Shops\eReports91");
 
     let mut args: Vec<String> = Vec::new();
     for prog in self.progs.into_iter().flatten() {
-      let prog = match last_prog.len() - prog.len() {
-        x if x > 0 => vec![&last_prog[0..x], &prog].concat(),
-        _ => prog,
+      let prog = match prog.parse::<u32>() {
+        // is number
+        Ok(_) => match PROG_LEN - prog.len() {
+          x if x > 0 => vec![&last_prog[0..x], &prog].concat(),
+          _ => prog,
+        },
+        Err(_) => prog, // has non-numeric characters
       };
 
       let root = erep_root.join(&prog).with_extension("PDF");
@@ -39,6 +44,9 @@ impl Cli {
       }
 
       last_prog = prog;
+      if last_prog.len() > PROG_LEN {
+        last_prog.truncate(PROG_LEN);
+      }
     }
 
     if args.len() > 0 {
