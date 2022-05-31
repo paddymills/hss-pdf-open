@@ -76,7 +76,7 @@ fn parse_dwg(dwg: &str) -> Vec<String> {
   match dwg.split('-').collect::<Vec<&str>>()[..] {
     [_, _] => {
       lazy_static! {
-        static ref PATTERN: Regex = Regex::new(r"([a-zA-Z]+)([0-9]+)-[a-zA-Z]*([0-9]+)").unwrap();
+        static ref PATTERN: Regex = Regex::new(r"([a-zA-Z]*)([0-9]+)-[a-zA-Z]*([0-9]+)").unwrap();
       }
 
       match PATTERN.captures(dwg) {
