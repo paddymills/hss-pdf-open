@@ -1,6 +1,6 @@
 [package]
 name = "hsspdfopen"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["paddymills <paddymills@pm.me>"]
 edition = "2018"
 
@@ -9,6 +9,8 @@ edition = "2018"
 [dependencies]
 exitfailure = "0.5"
 lazy_static = "1.4"
-regex = "1.3"
+open = "3.0"
+opener = "0.5"
+regex = "1.6"
 structopt = "0.3"
 winreg = "0.10.1"
