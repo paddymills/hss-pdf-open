@@ -1,16 +1,16 @@
 use exitfailure::ExitFailure;
 use regex::Regex;
 use std::path::PathBuf;
-use structopt::StructOpt;
+use clap::Parser;
 
 
 #[macro_use]
 extern crate lazy_static;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "View Shop Drawings", about = "Shop Drawing file launcher")]
+#[derive(Debug, Parser)]
+#[command(author, version, name = "View Shop Drawings", about = "Shop Drawing file launcher")]
 struct Cli {
-    #[structopt(parse(from_str = parse_prog))]
+    #[arg(value_parser = parse_prog)]
     progs: Vec<Vec<String>>,
 }
 
@@ -50,15 +50,15 @@ impl Cli {
 }
 
 fn main() -> Result<(), ExitFailure> {
-    let args = Cli::from_args();
+    let args = Cli::parse();
 
     args.open_files();
 
     Ok(())
 }
 
-fn parse_prog(prog: &str) -> Vec<String> {
-    match prog.split('-').collect::<Vec<&str>>()[..] {
+fn parse_prog(prog: &str) -> Result<Vec<String>, String> {
+    let ereps = match prog.split('-').collect::<Vec<&str>>()[..] {
         [_, _] => {
             lazy_static! {
                 static ref PATTERN: Regex = Regex::new(r"([0-9]+)-([0-9]+)").unwrap();
@@ -91,5 +91,7 @@ fn parse_prog(prog: &str) -> Vec<String> {
             }
         }
         _ => vec![String::from(prog)],
-    }
+    };
+
+    Ok(ereps)
 }

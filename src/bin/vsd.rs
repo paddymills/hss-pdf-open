@@ -1,18 +1,18 @@
 use exitfailure::ExitFailure;
 use regex::Regex;
 use std::{io, path::PathBuf};
-use structopt::StructOpt;
+use clap::Parser;
 
 #[macro_use]
 extern crate lazy_static;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "View Shop Drawings", about = "Shop Drawing file launcher")]
+#[derive(Debug, Parser)]
+#[command(author, version, name = "View Shop Drawings", about = "Shop Drawing file launcher")]
 struct Cli {
-    #[structopt(parse(from_str = parse_job))]
+    #[arg(value_parser = parse_job)]
     job: String,
 
-    #[structopt(parse(from_str = parse_dwg))]
+    #[arg(value_parser = parse_dwg)]
     dwgs: Vec<Vec<String>>,
 }
 
@@ -45,7 +45,7 @@ impl Cli {
 }
 
 fn main() -> Result<(), ExitFailure> {
-    let args = Cli::from_args();
+    let args = Cli::parse();
 
     // TODO: launch ViewShopDrawings if no args
     // PathBuf::from(r"\\HSSIENG\Resources\HS\PROG\DCS\ViewShopDrawingsNET.exe")
@@ -54,12 +54,12 @@ fn main() -> Result<(), ExitFailure> {
     Ok(())
 }
 
-fn parse_job(job: &str) -> String {
-    String::from(job.to_uppercase())
+fn parse_job(job: &str) -> Result<String, String> {
+    Ok(String::from(job.to_uppercase()))
 }
 
-fn parse_dwg(dwg: &str) -> Vec<String> {
-    match dwg.split('-').collect::<Vec<&str>>()[..] {
+fn parse_dwg(dwg: &str) -> Result<Vec<String>, String> {
+    let dwgs = match dwg.split('-').collect::<Vec<&str>>()[..] {
         [_, _] => {
             lazy_static! {
                 static ref PATTERN: Regex = Regex::new(r"([a-zA-Z]*)([0-9]+)-[a-zA-Z]*([0-9]+)").unwrap();
@@ -93,5 +93,7 @@ fn parse_dwg(dwg: &str) -> Vec<String> {
             }
         }
         _ => vec![String::from(dwg)],
-    }
+    };
+
+    Ok(dwgs)
 }
