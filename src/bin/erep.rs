@@ -1,4 +1,4 @@
-use exitfailure::ExitFailure;
+
 use regex::Regex;
 use std::path::PathBuf;
 use clap::Parser;
@@ -49,7 +49,7 @@ impl Cli {
     }
 }
 
-fn main() -> Result<(), ExitFailure> {
+fn main() -> Result<(), String> {
     let args = Cli::parse();
 
     args.open_files();

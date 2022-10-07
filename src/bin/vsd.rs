@@ -1,4 +1,3 @@
-use exitfailure::ExitFailure;
 use regex::Regex;
 use std::{io, path::PathBuf};
 use clap::Parser;
@@ -44,7 +43,7 @@ impl Cli {
     }
 }
 
-fn main() -> Result<(), ExitFailure> {
+fn main() -> Result<(), String> {
     let args = Cli::parse();
 
     // TODO: launch ViewShopDrawings if no args
