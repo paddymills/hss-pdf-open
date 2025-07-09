@@ -22,7 +22,7 @@ impl Cli {
         const PROG_LEN: usize = 5; // must be usize for len comparison and trucate
         let mut last_prog = String::from("00000");
 
-        let erep_root = PathBuf::from(r"\\hssfileserv1\hssiserv1\Shops\eReports91");
+        let erep_root = PathBuf::from(r"\\hssfileserv1\Shops\eReports");
 
         for prog in self.progs.into_iter().flatten() {
             let prog = match prog.parse::<u32>() {
