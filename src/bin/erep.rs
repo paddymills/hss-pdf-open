@@ -1,14 +1,17 @@
-
+use clap::Parser;
 use regex::Regex;
 use std::path::PathBuf;
-use clap::Parser;
-
 
 #[macro_use]
 extern crate lazy_static;
 
 #[derive(Debug, Parser)]
-#[command(author, version, name = "View Shop Drawings", about = "Shop Drawing file launcher")]
+#[command(
+    author,
+    version,
+    name = "View Shop Drawings",
+    about = "Shop Drawing file launcher"
+)]
 struct Cli {
     #[arg(value_parser = parse_prog)]
     progs: Vec<Vec<String>>,
