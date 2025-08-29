@@ -1,4 +1,6 @@
 use clap::Parser;
+use colored::*;
+use log::{debug, error, info, warn};
 use regex::Regex;
 use std::{num::ParseIntError, path::PathBuf};
 
@@ -61,6 +63,7 @@ impl IntoIterator for CliProg {
     }
 }
 
+
 #[derive(Debug, Parser)]
 #[command(
     author,
@@ -71,6 +74,12 @@ impl IntoIterator for CliProg {
 struct Cli {
     #[arg(value_parser = parse_prog)]
     progs: Vec<CliProg>,
+
+    #[arg(short = 'v', long = "verbose", action = clap::ArgAction::Count)]
+    verbosity: u8,
+
+    #[arg(short = 'q', long = "quiet")]
+    quiet: bool,
 }
 
 impl Cli {
@@ -79,32 +88,64 @@ impl Cli {
 
         let erep_root = PathBuf::from(r"\\hssfileserv1\Shops\eReports");
 
-        for prog in self.progs {
-            println!("Processing: {:?}", &prog);
+        info!("{} {}", "🚀".cyan(), "Starting eReports launcher...".bold().cyan());
+
+        for prog in &self.progs {
+            warn!("{} {}: {:?}", "📋".blue(), "Processing".bold().blue(), prog);
+            
             last_prog = prog
                 .fix_len(last_prog)
                 .into_iter()
                 .map(|full_prog| {
-                    println!(" -> Searching for: {}", &full_prog);
+                    info!("   {} {}: {}", "🔍".yellow(), "Searching for".yellow(), full_prog);
 
                     let root = erep_root.join(full_prog.to_string()).with_extension("PDF");
+                    debug!("   {} {}: {}", "🗂️".dimmed(), "Checking path".dimmed(), root.display());
+
                     if root.exists() {
-                        if let Ok(_) = opener::open(root) {
-                            println!("✅Opening: {}", &full_prog);
+                        match opener::open(&root) {
+                            Ok(_) => {
+                                warn!("{} {}: {}", "✅".green(), "Opened".bold().green(), full_prog);
+                            }
+                            Err(e) => {
+                                error!("{} {}: {} ({})", "⚠️".yellow(), "Failed to open".bold().yellow(), full_prog, e.to_string().dimmed());
+                            }
                         }
                     } else {
-                        println!("❌{} not found", &full_prog)
+                        warn!("{} {}: {}", "❌".red(), "Not found".bold().red(), full_prog);
                     }
 
                     full_prog
                 })
                 .last();
         }
+
+        info!("{} {}", "✨".green(), "Complete!".bold().green());
     }
 }
 
 fn main() -> Result<(), String> {
-    Cli::parse().open_files();
+    let cli = Cli::parse();
+    
+    // Initialize logger based on CLI flags
+    let log_level = if cli.quiet {
+        "off"
+    } else {
+        match cli.verbosity {
+            0 => "warn",    // Default: warn level
+            1 => "info",    // -v: info level
+            2 => "debug",   // -vv: debug level
+            _ => "trace",   // -vvv+: trace level
+        }
+    };
+    
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level))
+        .format_timestamp(None)
+        .format_module_path(false)
+        .format_target(false)
+        .init();
+
+    cli.open_files();
 
     Ok(())
 }
