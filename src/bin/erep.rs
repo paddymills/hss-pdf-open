@@ -76,8 +76,8 @@ impl Environment {
     fn get_root_path(&self) -> PathBuf {
         match self {
             Environment::Prd => PathBuf::from(r"\\hssfileserv1\Shops\eReports"),
-            Environment::Qas => PathBuf::from(r"\\hssieng\SNDataQas\eReport"),
-            Environment::Dev => PathBuf::from(r"\\hssieng\SNDataDev\eReport"),
+            Environment::Qas => PathBuf::from(r"\\hssieng\SNDataQas\eReports"),
+            Environment::Dev => PathBuf::from(r"\\hssieng\SNDataDev\eReports"),
         }
     }
 }
