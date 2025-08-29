@@ -1,9 +1,8 @@
 use regex::Regex;
-use std::{io, path::PathBuf};
+use std::{io, path::PathBuf, sync::LazyLock};
 use clap::Parser;
 
-#[macro_use]
-extern crate lazy_static;
+static DWG_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"([a-zA-Z]*)([0-9]+)-[a-zA-Z]*([0-9]+)").unwrap());
 
 #[derive(Debug, Parser)]
 #[command(author, version, name = "View Shop Drawings", about = "Shop Drawing file launcher")]
@@ -60,11 +59,7 @@ fn parse_job(job: &str) -> Result<String, String> {
 fn parse_dwg(dwg: &str) -> Result<Vec<String>, String> {
     let dwgs = match dwg.split('-').collect::<Vec<&str>>()[..] {
         [_, _] => {
-            lazy_static! {
-                static ref PATTERN: Regex = Regex::new(r"([a-zA-Z]*)([0-9]+)-[a-zA-Z]*([0-9]+)").unwrap();
-            }
-
-            match PATTERN.captures(dwg) {
+            match DWG_PATTERN.captures(dwg) {
                 Some(caps) => {
                     let mut dwgs = vec![];
                     let prefix = &caps[1];

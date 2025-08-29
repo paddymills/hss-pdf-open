@@ -2,10 +2,9 @@ use clap::{Parser, ValueEnum};
 use colored::*;
 use log::{debug, error, info, warn};
 use regex::Regex;
-use std::{num::ParseIntError, path::PathBuf};
+use std::{num::ParseIntError, path::PathBuf, sync::LazyLock};
 
-#[macro_use]
-extern crate lazy_static;
+static PROG_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"([0-9]+)-([0-9]+)").unwrap());
 
 fn u32_len(n: u32) -> u32 {
     match n {
@@ -184,11 +183,7 @@ fn main() -> Result<(), String> {
 fn parse_prog(prog: &str) -> Result<CliProg, ParseIntError> {
     let ereps = match prog.split('-').collect::<Vec<&str>>()[..] {
         [_, _] => {
-            lazy_static! {
-                static ref PATTERN: Regex = Regex::new(r"([0-9]+)-([0-9]+)").unwrap();
-            }
-
-            match PATTERN.captures(prog) {
+            match PROG_PATTERN.captures(prog) {
                 Some(caps) => CliProg::Range(caps[1].parse()?, caps[2].parse()?),
                 None => CliProg::Single(prog.parse()?),
             }
