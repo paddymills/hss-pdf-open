@@ -115,34 +115,34 @@ impl Cli {
 
         let erep_root = self.environment.get_root_path();
 
-        info!("{} {}", "🚀".cyan(), "Starting eReports launcher...".bold().cyan());
-        info!("{} {}: {} ({})", "🌐".blue(), "Environment".bold().blue(), 
+        info!("{}", "Starting eReports launcher...".bold().cyan());
+        info!("{}: {} ({})", "Environment".bold().blue(), 
               format!("{:?}", self.environment).bold(), 
               erep_root.display().to_string().dimmed());
 
         for prog in &self.progs {
-            warn!("{} {}: {:?}", "📋".blue(), "Processing".bold().blue(), prog);
+            warn!("{}: {:?}", "Processing".bold().blue(), prog);
             
             last_prog = prog
                 .fix_len(last_prog)
                 .into_iter()
                 .map(|full_prog| {
-                    info!("   {} {}: {}", "🔍".yellow(), "Searching for".yellow(), full_prog);
+                    info!("   {}: {}", "Searching for".yellow(), full_prog);
 
                     let root = erep_root.join(full_prog.to_string()).with_extension("PDF");
-                    debug!("   {} {}: {}", "🗂️".dimmed(), "Checking path".dimmed(), root.display());
+                    debug!("   {}: {}", "Checking path".dimmed(), root.display());
 
                     if root.exists() {
                         match opener::open(&root) {
                             Ok(_) => {
-                                warn!("{} {}: {}", "✅".green(), "Opened".bold().green(), full_prog);
+                                warn!("{}: {}", "Opened".bold().green(), full_prog);
                             }
                             Err(e) => {
-                                error!("{} {}: {} ({})", "⚠️".yellow(), "Failed to open".bold().yellow(), full_prog, e.to_string().dimmed());
+                                error!("{}: {} ({})", "Failed to open".bold().yellow(), full_prog, e.to_string().dimmed());
                             }
                         }
                     } else {
-                        warn!("{} {}: {}", "❌".red(), "Not found".bold().red(), full_prog);
+                        warn!("{}: {}", "Not found".bold().red(), full_prog);
                     }
 
                     full_prog
@@ -150,7 +150,7 @@ impl Cli {
                 .last();
         }
 
-        info!("{} {}", "✨".green(), "Complete!".bold().green());
+        info!("{}", "Complete!".bold().green());
     }
 }
 
@@ -173,6 +173,17 @@ fn main() -> Result<(), String> {
         .format_timestamp(None)
         .format_module_path(false)
         .format_target(false)
+        .format(|buf, record| {
+            use std::io::Write;
+            let emoji = match record.level() {
+                log::Level::Error => "🚨",
+                log::Level::Warn => "⚠️",
+                log::Level::Info => "ℹ️",
+                log::Level::Debug => "🔍",
+                log::Level::Trace => "🔎",
+            };
+            writeln!(buf, "{} {}", emoji, record.args())
+        })
         .init();
 
     cli.open_files();
