@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use colored::*;
 use log::{debug, error, info, warn};
 use regex::Regex;
@@ -63,6 +63,31 @@ impl IntoIterator for CliProg {
     }
 }
 
+#[derive(Debug, Clone, ValueEnum)]
+enum Environment {
+    #[value(name = "prd")]
+    Prd,
+    #[value(name = "qas")]
+    Qas,
+    #[value(name = "dev")]
+    Dev,
+}
+
+impl Environment {
+    fn get_root_path(&self) -> PathBuf {
+        match self {
+            Environment::Prd => PathBuf::from(r"\\hssfileserv1\Shops\eReports"),
+            Environment::Qas => PathBuf::from(r"\\hssieng\SNDataQas\eReport"),
+            Environment::Dev => PathBuf::from(r"\\hssieng\SNDataDev\eReport"),
+        }
+    }
+}
+
+impl Default for Environment {
+    fn default() -> Self {
+        Self::Prd
+    }
+}
 
 #[derive(Debug, Parser)]
 #[command(
@@ -80,15 +105,21 @@ struct Cli {
 
     #[arg(short = 'q', long = "quiet")]
     quiet: bool,
+
+    #[arg(short = 'e', long = "env", value_enum, default_value = "prd")]
+    environment: Environment,
 }
 
 impl Cli {
     fn open_files(self) {
         let mut last_prog: Option<u32> = None;
 
-        let erep_root = PathBuf::from(r"\\hssfileserv1\Shops\eReports");
+        let erep_root = self.environment.get_root_path();
 
         info!("{} {}", "🚀".cyan(), "Starting eReports launcher...".bold().cyan());
+        info!("{} {}: {} ({})", "🌐".blue(), "Environment".bold().blue(), 
+              format!("{:?}", self.environment).bold(), 
+              erep_root.display().to_string().dimmed());
 
         for prog in &self.progs {
             warn!("{} {}: {:?}", "📋".blue(), "Processing".bold().blue(), prog);
