@@ -30,7 +30,7 @@ fn fix_len(n: u32, prev: u32) -> u32 {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum CliProg {
     Single(u32),
     Range(u32, u32),
@@ -125,4 +125,110 @@ fn parse_prog(prog: &str) -> Result<CliProg, ParseIntError> {
     };
 
     Ok(ereps)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_u32_len() {
+        assert_eq!(u32_len(0), 1);
+        assert_eq!(u32_len(5), 1);
+        assert_eq!(u32_len(10), 2);
+        assert_eq!(u32_len(99), 2);
+        assert_eq!(u32_len(100), 3);
+        assert_eq!(u32_len(999), 3);
+        assert_eq!(u32_len(1000), 4);
+        assert_eq!(u32_len(12345), 5);
+    }
+
+    #[test]
+    fn test_fix_len_same_length() {
+        assert_eq!(fix_len(123, 456), 123);
+        assert_eq!(fix_len(99, 88), 99);
+    }
+
+    #[test]
+    fn test_fix_len_shorter_number() {
+        assert_eq!(fix_len(23, 1234), 1223);
+        assert_eq!(fix_len(5, 123), 125);
+        assert_eq!(fix_len(67, 1234), 1267);
+        assert_eq!(fix_len(1, 9876), 9871);
+    }
+
+    #[test]
+    fn test_fix_len_longer_number() {
+        assert_eq!(fix_len(1234, 56), 1234);
+        assert_eq!(fix_len(999, 12), 999);
+    }
+
+    #[test]
+    fn test_cliprog_single() {
+        let prog = CliProg::Single(123);
+        let items: Vec<u32> = prog.into_iter().collect();
+        assert_eq!(items, vec![123]);
+    }
+
+    #[test]
+    fn test_cliprog_range() {
+        let prog = CliProg::Range(5, 8);
+        let items: Vec<u32> = prog.into_iter().collect();
+        assert_eq!(items, vec![5, 6, 7, 8]);
+    }
+
+    #[test]
+    fn test_cliprog_fix_len_single_no_prev() {
+        let prog = CliProg::Single(123);
+        let fixed = prog.fix_len(None);
+        assert_eq!(fixed, CliProg::Single(123));
+    }
+
+    #[test]
+    fn test_cliprog_fix_len_single_with_prev() {
+        let prog = CliProg::Single(23);
+        let fixed = prog.fix_len(Some(1234));
+        assert_eq!(fixed, CliProg::Single(1223));
+    }
+
+    #[test]
+    fn test_cliprog_fix_len_range_no_prev() {
+        let prog = CliProg::Range(5, 8);
+        let fixed = prog.fix_len(None);
+        assert_eq!(fixed, CliProg::Range(5, 8));
+    }
+
+    #[test]
+    fn test_cliprog_fix_len_range_with_prev() {
+        let prog = CliProg::Range(23, 25);
+        let fixed = prog.fix_len(Some(1234));
+        assert_eq!(fixed, CliProg::Range(1223, 1225));
+    }
+
+    #[test]
+    fn test_parse_prog_single() {
+        let result = parse_prog("123").unwrap();
+        assert_eq!(result, CliProg::Single(123));
+    }
+
+    #[test]
+    fn test_parse_prog_range() {
+        let result = parse_prog("123-456").unwrap();
+        assert_eq!(result, CliProg::Range(123, 456));
+    }
+
+    #[test]
+    fn test_parse_prog_invalid_number() {
+        assert!(parse_prog("abc").is_err());
+    }
+
+    #[test]
+    fn test_parse_prog_range_with_invalid_number() {
+        assert!(parse_prog("123-abc").is_err());
+    }
+
+    #[test]
+    fn test_parse_prog_hyphen_but_not_range() {
+        assert!(parse_prog("123-456-789").is_err());
+    }
 }

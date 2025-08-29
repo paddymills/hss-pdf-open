@@ -13,3 +13,6 @@ open = "3.0"
 opener = "0.5"
 regex = "1.6"
 winreg = "0.10.1"
+
+[dev-dependencies]
+tempfile = "3.0"
