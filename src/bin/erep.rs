@@ -1,66 +1,115 @@
 use clap::Parser;
 use regex::Regex;
-use std::path::PathBuf;
+use std::{num::ParseIntError, path::PathBuf};
 
 #[macro_use]
 extern crate lazy_static;
 
-#[derive(Debug, Parser)]
-#[command(
-    author,
-    version,
-    name = "View Shop Drawings",
-    about = "Shop Drawing file launcher"
-)]
-struct Cli {
-    #[arg(value_parser = parse_prog)]
-    progs: Vec<Vec<String>>,
+fn u32_len(n: u32) -> u32 {
+    match n {
+        0 => 1,
+        _ => (n as f64).log10().floor() as u32 + 1,
+    }
 }
 
-impl Cli {
-    fn open_files(self) {
-        const PROG_LEN: usize = 5; // must be usize for len comparison and trucate
-        let mut last_prog = String::from("00000");
+fn fix_len(n: u32, prev: u32) -> u32 {
+    match [n, prev].map(u32_len) {
+        [n_len, prev_len] if n_len < prev_len => {
+            // Calculate how many leading digits we need from prev
+            let digits_needed = prev_len - n_len;
 
-        let erep_root = PathBuf::from(r"\\hssfileserv1\Shops\eReports");
+            // Extract the leading digits from prev
+            let divisor = 10_u32.pow(prev_len - digits_needed);
+            let leading_part = prev / divisor;
 
-        for prog in self.progs.into_iter().flatten() {
-            let prog = match prog.parse::<u32>() {
-                // is number
-                Ok(_) => match PROG_LEN - prog.len() {
-                    x if x > 0 => vec![&last_prog[0..x], &prog].concat(),
-                    _ => prog,
-                },
-                Err(_) => prog, // has non-numeric characters
-            };
+            // Combine: leading_part followed by n
+            let multiplier = 10_u32.pow(n_len);
+            leading_part * multiplier + n
+        }
+        _ => n,
+    }
+}
 
-            let root = erep_root.join(&prog).with_extension("PDF");
+#[derive(Debug, Clone)]
+enum CliProg {
+    Single(u32),
+    Range(u32, u32),
+}
 
-            if root.exists() {
-                if let Ok(_) = opener::open(root) {
-                    println!("Opening: {}", &prog);
-                }
-            } else {
-                println!("{} not found", &prog)
-            }
-
-            last_prog = prog;
-            if last_prog.len() > PROG_LEN {
-                last_prog.truncate(PROG_LEN);
+impl CliProg {
+    fn fix_len(&self, prev: Option<u32>) -> Self {
+        match (self, prev) {
+            (_, None) => self.clone(),
+            (CliProg::Single(n), Some(prev)) => CliProg::Single(fix_len(*n, prev)),
+            (CliProg::Range(a, b), Some(prev)) => {
+                let new_a = fix_len(*a, prev);
+                CliProg::Range(new_a, fix_len(*b, new_a))
             }
         }
     }
 }
 
-fn main() -> Result<(), String> {
-    let args = Cli::parse();
+impl IntoIterator for CliProg {
+    type Item = u32;
+    type IntoIter = std::vec::IntoIter<u32>;
 
-    args.open_files();
+    fn into_iter(self) -> Self::IntoIter {
+        match self {
+            CliProg::Single(n) => vec![n].into_iter(),
+            CliProg::Range(a, b) => (a..=b).collect::<Vec<u32>>().into_iter(),
+        }
+    }
+}
+
+#[derive(Debug, Parser)]
+#[command(
+    author,
+    version,
+    name = "eReports Launcher",
+    about = "eReports file launcher"
+)]
+struct Cli {
+    #[arg(value_parser = parse_prog)]
+    progs: Vec<CliProg>,
+}
+
+impl Cli {
+    fn open_files(self) {
+        let mut last_prog: Option<u32> = None;
+
+        let erep_root = PathBuf::from(r"\\hssfileserv1\Shops\eReports");
+
+        for prog in self.progs {
+            println!("Processing: {:?}", &prog);
+            last_prog = prog
+                .fix_len(last_prog)
+                .into_iter()
+                .map(|full_prog| {
+                    println!(" -> Searching for: {}", &full_prog);
+
+                    let root = erep_root.join(full_prog.to_string()).with_extension("PDF");
+                    if root.exists() {
+                        if let Ok(_) = opener::open(root) {
+                            println!("✅Opening: {}", &full_prog);
+                        }
+                    } else {
+                        println!("❌{} not found", &full_prog)
+                    }
+
+                    full_prog
+                })
+                .last();
+        }
+    }
+}
+
+fn main() -> Result<(), String> {
+    Cli::parse().open_files();
 
     Ok(())
 }
 
-fn parse_prog(prog: &str) -> Result<Vec<String>, String> {
+fn parse_prog(prog: &str) -> Result<CliProg, ParseIntError> {
     let ereps = match prog.split('-').collect::<Vec<&str>>()[..] {
         [_, _] => {
             lazy_static! {
@@ -68,32 +117,11 @@ fn parse_prog(prog: &str) -> Result<Vec<String>, String> {
             }
 
             match PATTERN.captures(prog) {
-                Some(caps) => {
-                    let mut progs = vec![];
-                    let (a, b) = (&caps[1], &caps[2]);
-
-                    // regex should ensure these two parse numerically and
-                    // conventionally these numbers should never exceed u32::MAX
-                    // therefore ->    should not panic!
-                    let start: u32 = a.parse().unwrap();
-                    let end: u32 = match a.len() - b.len() {
-                        x if x > 0 => {
-                            let c = vec![&a[0..x], &b].concat();
-                            c.parse().unwrap()
-                        }
-                        _ => b.parse().unwrap(), // same length or b is longer (i.e. 1-20)
-                    };
-
-                    for i in start..end + 1 {
-                        progs.push(i.to_string());
-                    }
-
-                    progs
-                }
-                None => vec![String::from(prog)],
+                Some(caps) => CliProg::Range(caps[1].parse()?, caps[2].parse()?),
+                None => CliProg::Single(prog.parse()?),
             }
         }
-        _ => vec![String::from(prog)],
+        _ => CliProg::Single(prog.parse()?),
     };
 
     Ok(ereps)
