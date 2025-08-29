@@ -9,10 +9,10 @@ edition = "2018"
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
 lazy_static = "1.4"
-open = "3.0"
-opener = "0.5"
+open = "5.3"
+opener = "0.8"
 regex = "1.6"
-winreg = "0.10.1"
+winreg = "0.55.0"
 
 [dev-dependencies]
 tempfile = "3.0"
